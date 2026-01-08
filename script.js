@@ -635,55 +635,76 @@
   function drawSnake(alpha) {
     if (state.snake.length === 0) return;
 
-    // Corpo
-    for (let i = state.snake.length - 1; i >= 0; i -= 1) {
+    // Estilo "reto" (tipo o da imagem): corpo contínuo grosso seguindo o caminho.
+    const points = [];
+    for (let i = 0; i < state.snake.length; i += 1) {
       const p = getInterpolatedPos(i, alpha);
-      const x = p.x * CELL;
-      const y = p.y * CELL;
-
-      ctx.save();
-      ctx.shadowColor = i === 0 ? "rgba(96, 165, 250, 0.25)" : "rgba(147, 197, 253, 0.16)";
-      ctx.shadowBlur = 10;
-      ctx.fillStyle = i === 0 ? COLORS.snakeHead : COLORS.snakeBody;
-      roundRect(x + 2, y + 2, CELL - 4, CELL - 4, 10);
-      ctx.fill();
-      ctx.restore();
+      points.push({
+        x: (p.x + 0.5) * CELL,
+        y: (p.y + 0.5) * CELL,
+      });
     }
 
-    // Olhinhos no head
+    // Corpo (stroke grosso)
+    ctx.save();
+    ctx.lineWidth = Math.max(8, CELL * 0.86);
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeStyle = COLORS.snakeBody;
+    ctx.beginPath();
+    ctx.moveTo(points[points.length - 1].x, points[points.length - 1].y);
+    for (let i = points.length - 2; i >= 0; i -= 1) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Cabeça (um pouco mais "cheia" e destacada)
     const head = getInterpolatedPos(0, alpha);
     const hx = head.x * CELL;
     const hy = head.y * CELL;
 
-    const eye = () => {
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.beginPath();
-      ctx.arc(0, 0, 2.4, 0, Math.PI * 2);
-      ctx.fill();
-    };
-
     ctx.save();
-    ctx.translate(hx + CELL / 2, hy + CELL / 2);
-
-    let angle = 0;
-    if (state.dir === DIR.UP) angle = -Math.PI / 2;
-    if (state.dir === DIR.DOWN) angle = Math.PI / 2;
-    if (state.dir === DIR.LEFT) angle = Math.PI;
-    if (state.dir === DIR.RIGHT) angle = 0;
-
-    ctx.rotate(angle);
-    ctx.translate(CELL * 0.18, 0);
-
-    ctx.save();
-    ctx.translate(CELL * 0.12, -CELL * 0.12);
-    eye();
+    ctx.fillStyle = COLORS.snakeHead;
+    // Cabeça ligeiramente mais larga
+    const inset = Math.max(1, Math.floor(CELL * 0.06));
+    roundRect(hx + inset, hy + inset, CELL - inset * 2, CELL - inset * 2, Math.max(6, CELL * 0.28));
+    ctx.fill();
     ctx.restore();
 
-    ctx.save();
-    ctx.translate(CELL * 0.12, CELL * 0.12);
-    eye();
-    ctx.restore();
+    // Olhos simples (como no exemplo)
+    const dir = state.dir;
+    const cx = hx + CELL / 2;
+    const cy = hy + CELL / 2;
 
+    // Vetor para frente e para o lado
+    const fx = dir.x;
+    const fy = dir.y;
+    const sx = -fy;
+    const sy = fx;
+
+    const eyeOffsetForward = CELL * 0.16;
+    const eyeOffsetSide = CELL * 0.18;
+    const eyeR = Math.max(2.6, CELL * 0.13);
+    const pupilR = Math.max(1.4, CELL * 0.06);
+
+    const ex1 = cx + fx * eyeOffsetForward + sx * eyeOffsetSide;
+    const ey1 = cy + fy * eyeOffsetForward + sy * eyeOffsetSide;
+    const ex2 = cx + fx * eyeOffsetForward - sx * eyeOffsetSide;
+    const ey2 = cy + fy * eyeOffsetForward - sy * eyeOffsetSide;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.beginPath();
+    ctx.arc(ex1, ey1, eyeR, 0, Math.PI * 2);
+    ctx.arc(ex2, ey2, eyeR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+    ctx.beginPath();
+    ctx.arc(ex1 + fx * (eyeR * 0.32), ey1 + fy * (eyeR * 0.32), pupilR, 0, Math.PI * 2);
+    ctx.arc(ex2 + fx * (eyeR * 0.32), ey2 + fy * (eyeR * 0.32), pupilR, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
